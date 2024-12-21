@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logbook Kita</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        header {
+            background-color: #007BFF;
+            color: white;
+            text-align: center;
+            padding: 1rem 0;
+        }
+        nav {
+            display: flex;
+            justify-content: center;
+            background-color: #0056b3;
+            padding: 10px 0;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        nav a.active {
+            background-color: #003f7f;
+        }
+        nav a:hover {
+            background-color: #004c99;
+        }
+        main {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        .entry-preview {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .entry-preview img {
+            max-width: 100px;
+            height: auto;
+            border-radius: 5px;
+        }
+        .entry-preview textarea {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: none;
+        }
+        .folder {
+            margin-bottom: 30px;
+        }
+        .folder h3 {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Our Logbook</h1>
+    </header>
+    <nav>
+        <a href="#section-aku" class="active" data-section="aku">Adik</a>
+        <a href="#section-dia" data-section="dia">B's</a>
+    </nav>
+    <main>
+        <!-- Section Aku -->
+        <div id="section-aku" class="section active">
+            <h2>Adik</h2>
+            <input type="file" id="uploadAku" accept="image/*" multiple>
+            <div id="previewAku" class="preview-area"></div>
+            <button id="submitAku">Submit</button>
+        </div>
+
+        <!-- Section Dia -->
+        <div id="section-dia" class="section">
+            <h2>B's</h2>
+            <input type="file" id="uploadDia" accept="image/*" multiple>
+            <div id="previewDia" class="preview-area"></div>
+            <button id="submitDia">Submit</button>
+        </div>
+    </main>
+    <script>
+        // Helper buat dapat tanggal hari ini
+        function getTodayDate() {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return new Date().toLocaleDateString('id-ID', options);
+        }
+
+        // Tab Navigation
+        document.querySelectorAll('nav a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetSection = this.getAttribute('data-section');
+                
+                document.querySelectorAll('.section').forEach(section => {
+                    section.classList.remove('active');
+                });
+
+                document.querySelector(`#section-${targetSection}`).classList.add('active');
+                
+                document.querySelectorAll('nav a').forEach(navLink => {
+                    navLink.classList.remove('active');
+                });
+                this.classList.add('active');
+            });
+        });
+
+        // Upload Function dengan preview multiple file dan deskripsi
+        function setupUpload(inputId, previewId, submitId) {
+            const input = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+            const submitButton = document.getElementById(submitId);
+
+            input.addEventListener('change', function() {
+                preview.innerHTML = ''; // Clear preview
+                const files = Array.from(this.files);
+
+                files.forEach(file => {
+                    const reader = new FileReader();
+
+                    reader.onload = function(e) {
+                        const entryPreview = document.createElement('div');
+                        entryPreview.className = 'entry-preview';
+
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+
+                        const description = document.createElement('textarea');
+                        description.rows = 3;
+                        description.placeholder = "Tulis deskripsi untuk foto ini...";
+
+                        entryPreview.appendChild(img);
+                        entryPreview.appendChild(description);
+
+                        preview.appendChild(entryPreview);
+                    };
+
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            submitButton.addEventListener('click', function() {
+                const today = getTodayDate();
+                let folder = document.querySelector(`[data-date="${today}"]`);
+
+                // Cek apakah folder untuk hari ini sudah ada
+                if (!folder) {
+                    folder = document.createElement('div');
+                    folder.className = 'folder';
+                    folder.setAttribute('data-date', today);
+
+                    const folderHeader = document.createElement('h3');
+                    folderHeader.textContent = `Log Harian - ${today}`;
+                    folder.appendChild(folderHeader);
+
+                    document.body.appendChild(folder);
+                }
+
+                const previews = preview.querySelectorAll('.entry-preview');
+
+                previews.forEach(previewItem => {
+                    const img = previewItem.querySelector('img');
+                    const description = previewItem.querySelector('textarea');
+
+                    if (!description.value.trim()) {
+                        alert("Isi semua deskripsi dulu sebelum submit!");
+                        return;
+                    }
+
+                    const entry = document.createElement('div');
+                    entry.className = 'entry';
+
+                    const imgClone = img.cloneNode(true);
+                    const descClone = document.createElement('p');
+                    descClone.textContent = description.value;
+
+                    entry.appendChild(imgClone);
+                    entry.appendChild(descClone);
+
+                    folder.appendChild(entry);
+                });
+
+                // Clear preview setelah submit
+                preview.innerHTML = '';
+                input.value = '';
+            });
+        }
+
+        // Setup Upload untuk Aku dan Dia
+        setupUpload('uploadAku', 'previewAku', 'submitAku');
+        setupUpload('uploadDia', 'previewDia', 'submitDia');
+    </script>
+</body>
+</html>
